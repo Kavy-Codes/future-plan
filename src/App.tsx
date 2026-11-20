@@ -132,7 +132,16 @@ export default function App() {
 
   return (
     <div className="app">
-      <a className="skip-link" href="#main">
+      <a
+        className="skip-link"
+        href="#main"
+        onClick={(e) => {
+          e.preventDefault();
+          const main = document.getElementById('main');
+          main?.focus();
+          main?.scrollIntoView();
+        }}
+      >
         Skip to content
       </a>
 
@@ -264,7 +273,7 @@ export default function App() {
           </div>
         </aside>
 
-        <main id="main" className="main">
+        <main id="main" className="main" tabIndex={-1}>
           <div className="main__inner">
             {active === 'start' ? (
               <header className="hero">

@@ -434,6 +434,9 @@ a {
 .main {
   min-width: 0;
 }
+.main:focus {
+  outline: none;
+}
 .main__inner {
   max-width: 800px;
   margin-inline: auto;
