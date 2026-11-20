@@ -27,8 +27,13 @@
       (function () {
         try {
           var saved = localStorage.getItem('futureplan.v1.theme');
+          try {
+            saved = saved === null ? null : JSON.parse(saved);
+          } catch (e) {
+            saved = null;
+          }
           var system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-          document.documentElement.dataset.theme = saved || system;
+          document.documentElement.dataset.theme = saved === 'dark' || saved === 'light' ? saved : system;
         } catch (e) {}
       })();
     </script>
