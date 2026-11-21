@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
 import { FAQS } from '../data/content';
-import { ArrowRight, ChevronDown, Close, Search } from '../components/Icons';
+import { ChevronDown, Close, Search } from '../components/Icons';
 import { Eyebrow, Pill } from '../components/ui';
 
 const GROUPS = ['All', ...Array.from(new Set(FAQS.map((f) => f.group)))];
 
-export default function Doubts({ go }: { go: (id: string) => void }) {
+export default function Doubts() {
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState('All');
   const [open, setOpen] = useState<string[]>([]);
@@ -114,13 +114,6 @@ export default function Doubts({ go }: { go: (id: string) => void }) {
         </ul>
       )}
 
-      <div className="next-inline">
-        <p>Every claim above points to a document. The last page lists them with dates.</p>
-        <button type="button" className="btn btn--solid" onClick={() => go('sources')}>
-          Sources and terms
-          <ArrowRight />
-        </button>
-      </div>
 
       <div className="faq-footnote">
         <Eyebrow>One thing worth saying</Eyebrow>

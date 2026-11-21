@@ -8,7 +8,7 @@ const licenseTone = (v: string) => (v === 'required' ? 'warn' : v === 'sometimes
 const licenseLabel = (v: string) =>
   v === 'required' ? 'Licence required' : v === 'sometimes' ? 'Licence for some roles' : 'No licence needed';
 
-export default function Paths({ go }: { go: (id: string) => void }) {
+export default function Paths() {
   const [active, setActive] = useState(PATHS[0].id);
   const tabsRef = useRef<Array<HTMLButtonElement | null>>([]);
   const current = PATHS.find((p) => p.id === active) ?? PATHS[0];
@@ -124,13 +124,6 @@ export default function Paths({ go }: { go: (id: string) => void }) {
         22. What matters at 17 is the degree, the grades, and the entrance exam.
       </Callout>
 
-      <div className="next-inline">
-        <p>Next, the three admission doors and the one rule in each that people get wrong.</p>
-        <button type="button" className="btn btn--solid" onClick={() => go('admissions')}>
-          Getting in
-          <ArrowRight />
-        </button>
-      </div>
     </div>
   );
 }

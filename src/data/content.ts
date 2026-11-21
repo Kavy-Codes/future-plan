@@ -4,6 +4,10 @@ export type Section = {
   label: string;
   title: string;
   lede: string;
+  time: string;
+  gist: string;
+  priority: 'start' | 'core' | 'later' | 'proof';
+  skipIf?: string;
 };
 
 export type Path = {
@@ -36,6 +40,9 @@ export const SECTIONS: Section[] = [
     num: '01',
     label: 'Start here',
     title: 'The short answer, before the details',
+    time: '5 min',
+    gist: 'The route, the three moves, and what to ignore.',
+    priority: 'start',
     lede: 'If you only read one page, read this one. It is the route I would take, the trap I would avoid, and the three things worth doing this month.',
   },
   {
@@ -43,6 +50,9 @@ export const SECTIONS: Section[] = [
     num: '02',
     label: 'Psychology',
     title: 'What you are actually signing up to study',
+    time: '6 min',
+    gist: 'What the degree is, and what it is not.',
+    priority: 'core',
     lede: 'Psychology is a science of behaviour and mind. It is not mind reading, and it is not only therapy. Here is what the four years contain, and where the line sits between studying it and practising it.',
   },
   {
@@ -50,6 +60,9 @@ export const SECTIONS: Section[] = [
     num: '03',
     label: 'Which path',
     title: 'Eight kinds of psychologist, and who needs a licence',
+    time: '6 min',
+    gist: 'Eight branches, and which ones need a licence.',
+    priority: 'core',
     lede: 'You do not choose a specialisation at 17. You choose it in your master’s. Still, knowing the landscape now helps you pick the right degree and the right entrance exam.',
   },
   {
@@ -57,6 +70,9 @@ export const SECTIONS: Section[] = [
     num: '04',
     label: 'Getting in',
     title: 'The exams, the quotas, and the scores that matter',
+    time: '8 min',
+    gist: 'CUET, the Delhi quota, Jamia’s test, and the scores.',
+    priority: 'core',
     lede: 'Three doors matter most for you. Delhi University through CUET, Ambedkar University through CUET and its Delhi quota, and Jamia through its own test. Each has one rule that catches people out.',
   },
   {
@@ -64,6 +80,9 @@ export const SECTIONS: Section[] = [
     num: '05',
     label: 'The roadmap',
     title: 'Ages 17 to 30, one year at a time',
+    time: '6 min',
+    gist: 'Ages 17 to 30, year by year.',
+    priority: 'core',
     lede: 'This is the long view. Nothing here is a race. The point is to avoid losing a year to a wrong turn, and to know what each stage is for.',
   },
   {
@@ -71,6 +90,10 @@ export const SECTIONS: Section[] = [
     num: '06',
     label: 'Teaching',
     title: 'Teaching is a real career. It is just a different one.',
+    time: '7 min',
+    gist: 'The honest cost of D.El.Ed and JBT.',
+    priority: 'later',
+    skipIf: 'Skip for now if teaching is not on your mind. Read it before you consider D.El.Ed or JBT.',
     lede: 'You have thought about D.El.Ed or JBT, probably because someone said it leads to a government job quickly. Some of that is true. Most of the speed is not. Here is the honest version, state by state.',
   },
   {
@@ -78,6 +101,10 @@ export const SECTIONS: Section[] = [
     num: '07',
     label: 'Money',
     title: 'Earning while you study, without wrecking your degree',
+    time: '6 min',
+    gist: 'What you can earn, and how many hours it costs.',
+    priority: 'later',
+    skipIf: 'Skip for now if money is not a worry. Read it before you take a job during term.',
     lede: 'You want your own money, and you can have it. The rule is simple. A full-time job and a full-time degree cannot share a day.',
   },
   {
@@ -85,6 +112,10 @@ export const SECTIONS: Section[] = [
     num: '08',
     label: 'Doubts',
     title: 'The questions you have not asked out loud',
+    time: '3 min',
+    gist: 'Thirty-four short answers, grouped by theme.',
+    priority: 'later',
+    skipIf: 'Use this as a lookup page. Search it when a question comes up, not before.',
     lede: 'Short answers to the things that keep circling. Search them, or open the ones that sound like you.',
   },
   {
@@ -92,16 +123,23 @@ export const SECTIONS: Section[] = [
     num: '09',
     label: 'Sources',
     title: 'Where every claim comes from',
+    time: '2 min',
+    gist: 'Every official document, with dates.',
+    priority: 'proof',
+    skipIf: 'Come here to check a number or a rule. You do not need to read it first.',
     lede: 'Every number on this site traces back to a government notice, a university bulletin, or a prospectus. The date matters as much as the link, so both are here.',
   },
 ];
 
 export const ROUTE = [
-  { year: '2027', title: 'CUET and the BA', body: 'Four-year B.A. (Hons.) Psychology at Delhi University, AUD, or Jamia.' },
-  { year: '2031', title: 'Master’s', body: 'Clinical, counselling, or organisational. Two years, full time.' },
-  { year: '2033', title: 'Licence or PhD', body: 'RCI registration for clinical practice, or UGC NET and a funded PhD.' },
-  { year: '2036', title: 'The work', body: 'Practice, research, a university post, or a school counselling office.' },
+  { year: '2027', age: '18', title: 'CUET and the BA', body: 'Four-year B.A. (Hons.) Psychology at Delhi University, AUD, or Jamia.' },
+  { year: '2031', age: '22', title: 'Master’s', body: 'Clinical, counselling, or organisational. Two years, full time.' },
+  { year: '2033', age: '24', title: 'Licence or PhD', body: 'RCI registration for clinical practice, or UGC NET and a funded PhD.' },
+  { year: '2036', age: '27', title: 'The work', body: 'Practice, research, a university post, or a school counselling office.' },
 ];
+
+export const CORE_ORDER = ['psychology', 'paths', 'admissions', 'roadmap'];
+export const READ_LATER = ['teaching', 'money', 'doubts', 'sources'];
 
 export const PATHS: Path[] = [
   {

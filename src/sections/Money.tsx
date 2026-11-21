@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { EARN_WAYS } from '../data/content';
 import { Callout, Eyebrow, Pill } from '../components/ui';
-import { ArrowRight, Alert } from '../components/Icons';
+import { MoneyBars } from '../components/Visuals';
+import { Alert } from '../components/Icons';
 import { inr } from '../lib/hooks';
 
 const STAGES = [
@@ -37,7 +38,7 @@ const BUDGET = [
   },
 ];
 
-export default function Money({ go }: { go: (id: string) => void }) {
+export default function Money() {
   const [stage, setStage] = useState<StageId>('gap');
   const [hours, setHours] = useState(8);
 
@@ -147,6 +148,18 @@ export default function Money({ go }: { go: (id: string) => void }) {
         </div>
       </section>
 
+      <section className="block" aria-labelledby="ranges-heading">
+        <Eyebrow>At a glance</Eyebrow>
+        <h3 id="ranges-heading" className="h3">
+          Four ranges, drawn to the same scale
+        </h3>
+        <p className="body">
+          The fellowship bar is far to the right because it is a different kind of money. It is full time, and it comes
+          with a no-other-work rule.
+        </p>
+        <MoneyBars />
+      </section>
+
       <section className="block" aria-labelledby="budget-heading">
         <Eyebrow>The other side of the ledger</Eyebrow>
         <h3 id="budget-heading" className="h3">
@@ -196,13 +209,6 @@ export default function Money({ go }: { go: (id: string) => void }) {
         </p>
       </section>
 
-      <div className="next-inline">
-        <p>Still unsure about something? The doubts page is a fair place to check.</p>
-        <button type="button" className="btn btn--solid" onClick={() => go('doubts')}>
-          Questions and doubts
-          <ArrowRight />
-        </button>
-      </div>
     </div>
   );
 }

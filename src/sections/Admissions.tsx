@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { ADMISSION_DOORS, DU_CUTOFFS } from '../data/content';
+import { ADMISSION_DOORS } from '../data/content';
 import { Callout, Eyebrow, Pill } from '../components/ui';
-import { ArrowRight, Check, External, Alert } from '../components/Icons';
+import { Check, External, Alert } from '../components/Icons';
+import { ScoreBars } from '../components/Visuals';
 
 const SUBJECTS = [
   'English',
@@ -107,7 +108,7 @@ function CuetMapper() {
   );
 }
 
-export default function Admissions({ go }: { go: (id: string) => void }) {
+export default function Admissions() {
   return (
     <div className="stack-lg">
       <section className="block" aria-labelledby="doors-heading">
@@ -116,10 +117,13 @@ export default function Admissions({ go }: { go: (id: string) => void }) {
           Pick the exam, then respect its one rule
         </h3>
         <div className="door-grid">
-          {ADMISSION_DOORS.map((door) => (
+          {ADMISSION_DOORS.map((door, i) => (
             <article key={door.id} className="door">
               <div className="door__top">
-                <h4 className="door__name">{door.name}</h4>
+                <div>
+                  <span className="door__num">Door {i + 1}</span>
+                  <h4 className="door__name">{door.name}</h4>
+                </div>
                 <Pill tone="accent">{door.exam}</Pill>
               </div>
               <p className="door__strength">{door.strength}</p>
@@ -151,29 +155,7 @@ export default function Admissions({ go }: { go: (id: string) => void }) {
           </div>
           <Pill tone="quiet">Out of 1,000</Pill>
         </div>
-        <div className="table-wrap">
-          <table className="table table--scores">
-            <caption className="sr-only">Delhi University 2025 first round general category minimum allocation scores</caption>
-            <thead>
-              <tr>
-                <th scope="col">College</th>
-                <th scope="col">Programme</th>
-                <th scope="col" className="num">
-                  Score
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {DU_CUTOFFS.map((row) => (
-                <tr key={row.college}>
-                  <th scope="row">{row.college}</th>
-                  <td>{row.programme}</td>
-                  <td className="num num--strong">{row.score}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ScoreBars />
         <p className="footnote">
           First round, general category, July 2025. Scores move every year with the paper and the applicant pool. Use
           them to calibrate ambition, not to set a single target. A score above 900 is competitive at the top; above
@@ -212,13 +194,6 @@ export default function Admissions({ go }: { go: (id: string) => void }) {
         </a>
       </div>
 
-      <div className="next-inline">
-        <p>With the exam sorted, the next question is the shape of the next decade.</p>
-        <button type="button" className="btn btn--solid" onClick={() => go('roadmap')}>
-          The roadmap
-          <ArrowRight />
-        </button>
-      </div>
     </div>
   );
 }

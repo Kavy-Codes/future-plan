@@ -1,8 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FAQS, GLOSSARY, PATHS, PROFILE, SECTIONS, SOURCES } from './data/content';
 import { useSectionHash, useStored, useTheme, scrollToTop } from './lib/hooks';
-import { ArrowLeft, ArrowRight, Check, Close, Compass, Menu, Moon, Note, Pin, Print, Search, Sun } from './components/Icons';
-import { Eyebrow, Pill, ProgressRing } from './components/ui';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Close,
+  Compass,
+  Info,
+  Install,
+  Menu,
+  Moon,
+  Note,
+  Search,
+  Sun,
+} from './components/Icons';
+import { useInstallPrompt } from './lib/pwa';
 import Start from './sections/Start';
 import Psychology from './sections/Psychology';
 import Paths from './sections/Paths';
@@ -15,19 +28,37 @@ import Sources from './sections/Sources';
 
 const IDS = SECTIONS.map((s) => s.id);
 
-const RENDERERS: Record<string, (props: { go: (id: string) => void; checked: string[]; onToggle: (id: string) => void }) => JSX.Element> = {
-  start: (p) => <Start checked={p.checked} onToggle={p.onToggle} go={p.go} />,
+const RENDERERS: Record<string, () => JSX.Element> = {
   psychology: () => <Psychology />,
-  paths: (p) => <Paths go={p.go} />,
-  admissions: (p) => <Admissions go={p.go} />,
-  roadmap: (p) => <Roadmap go={p.go} />,
-  teaching: (p) => <Teaching go={p.go} />,
-  money: (p) => <Money go={p.go} />,
-  doubts: (p) => <Doubts go={p.go} />,
+  paths: () => <Paths />,
+  admissions: () => <Admissions />,
+  roadmap: () => <Roadmap />,
+  teaching: () => <Teaching />,
+  money: () => <Money />,
+  doubts: () => <Doubts />,
   sources: () => <Sources />,
 };
 
+const GROUPS = [
+  { key: 'start' as const, label: 'Start here', note: '' },
+  { key: 'core' as const, label: 'The core route', note: 'Read these four in order. About 30 minutes.' },
+  { key: 'later' as const, label: 'When you need it', note: 'Look these up. Do not read them first.' },
+  { key: 'proof' as const, label: 'Proof', note: 'Check a number or a rule.' },
+];
+
 type Result = { type: string; title: string; body: string; target: string };
+
+function buildIndex(): Result[] {
+  const results: Result[] = [];
+  SECTIONS.forEach((s) => results.push({ type: 'Section', title: s.title, body: s.label, target: s.id }));
+  PATHS.forEach((p) => results.push({ type: 'Branch', title: p.name, body: p.short, target: 'paths' }));
+  FAQS.forEach((f) => results.push({ type: 'Question', title: f.q, body: f.a, target: 'doubts' }));
+  GLOSSARY.forEach((g) => results.push({ type: 'Word', title: g.term, body: g.def, target: 'sources' }));
+  SOURCES.forEach((s) => results.push({ type: 'Source', title: s.name, body: `${s.org}. ${s.settles}`, target: 'sources' }));
+  return results;
+}
+
+const SEARCH_INDEX = buildIndex();
 
 function trapTab(e: React.KeyboardEvent<HTMLElement>) {
   if (e.key !== 'Tab') return;
@@ -46,27 +77,19 @@ function trapTab(e: React.KeyboardEvent<HTMLElement>) {
   }
 }
 
-function buildIndex(): Result[] {
-  const results: Result[] = [];
-  SECTIONS.forEach((s) => results.push({ type: 'Section', title: s.title, body: s.label, target: s.id }));
-  PATHS.forEach((p) => results.push({ type: 'Branch', title: p.name, body: p.short, target: 'paths' }));
-  FAQS.forEach((f) => results.push({ type: 'Question', title: f.q, body: f.a, target: 'doubts' }));
-  GLOSSARY.forEach((g) => results.push({ type: 'Word', title: g.term, body: g.def, target: 'sources' }));
-  SOURCES.forEach((s) => results.push({ type: 'Source', title: s.name, body: `${s.org}. ${s.settles}`, target: 'sources' }));
-  return results;
-}
-
-const SEARCH_INDEX = buildIndex();
-
 export default function App() {
   const { theme, toggle } = useTheme();
   const [active, goRaw] = useSectionHash(IDS, 'start');
-  const [done, setDone] = useStored<string[]>('done', []);
-  const [pinned, setPinned] = useStored<string[]>('pinned', []);
+  const [storedDone, setDone] = useStored<string[]>('done', []);
+  const [checked, setChecked] = useStored<string[]>('checked', []);
   const [notes, setNotes] = useStored<string>('notes', '');
+  const done = useMemo(() => storedDone.filter((id) => IDS.includes(id)), [storedDone]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [installOpen, setInstallOpen] = useState(false);
+  const { installable, ios, promptInstall } = useInstallPrompt();
+  const previousSection = useRef(active);
 
   const activeIndex = IDS.indexOf(active);
   const current = SECTIONS[activeIndex];
@@ -83,18 +106,31 @@ export default function App() {
     [goRaw],
   );
 
+  const startInstall = async () => {
+    const outcome = await promptInstall();
+    if (outcome === 'unavailable') setInstallOpen(true);
+  };
+
   const next = activeIndex < SECTIONS.length - 1 ? SECTIONS[activeIndex + 1] : null;
   const prev = activeIndex > 0 ? SECTIONS[activeIndex - 1] : null;
+  const nextUp = SECTIONS.find((s) => !done.includes(s.id)) ?? SECTIONS[0];
 
-  const toggleDone = useCallback(
+  const toggleChecked = useCallback(
     (id: string) => {
-      setDone((prevDone) => (prevDone.includes(id) ? prevDone.filter((x) => x !== id) : [...prevDone, id]));
+      setChecked((prevChecked) =>
+        prevChecked.includes(id) ? prevChecked.filter((x) => x !== id) : [...prevChecked, id],
+      );
     },
-    [setDone],
+    [setChecked],
   );
 
-  const togglePin = (id: string) => {
-    setPinned((prevPinned) => (prevPinned.includes(id) ? prevPinned.filter((x) => x !== id) : [...prevPinned, id]));
+  useEffect(() => {
+    if (storedDone.length !== done.length) setDone(done);
+  }, [storedDone, done, setDone]);
+
+  const finishAndNext = () => {
+    if (!done.includes(current.id)) setDone([...done, current.id]);
+    go(next ? next.id : 'start');
   };
 
   useEffect(() => {
@@ -114,21 +150,25 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const locked = menuOpen || searchOpen || notesOpen;
+    const locked = menuOpen || searchOpen || notesOpen || installOpen;
     document.body.style.overflow = locked ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
-  }, [menuOpen, searchOpen, notesOpen]);
+  }, [menuOpen, searchOpen, notesOpen, installOpen]);
 
-  const renderer = RENDERERS[active] ?? RENDERERS.start;
+  useEffect(() => {
+    if (previousSection.current === active) return;
+    previousSection.current = active;
+    const heading = document.querySelector<HTMLElement>('.doc-head__title, .start-hero__title');
+    if (!heading) return;
+    heading.tabIndex = -1;
+    heading.focus({ preventScroll: true });
+    heading.addEventListener('blur', () => heading.removeAttribute('tabindex'), { once: true });
+  }, [active]);
 
-  const readShortAnswer = () => {
-    const target = document.getElementById('short-answer');
-    if (!target) return;
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-  };
+  const renderer = RENDERERS[active];
+  const nextTime = next ? `${next.time} · ${next.gist}` : '';
 
   return (
     <div className="app">
@@ -147,48 +187,38 @@ export default function App() {
 
       <header className="site-header">
         <div className="wrap site-header__inner">
-          <div className="site-header__left">
-            <button
-              type="button"
-              className="icon-btn site-header__menu"
-              aria-label="Open contents"
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen(true)}
-            >
-              <Menu />
-            </button>
-            <a
-              className="brand"
-              href="#start"
-              onClick={(e) => {
-                e.preventDefault();
-                go('start');
-              }}
-            >
-              <span className="brand__mark" aria-hidden="true">
-                <Compass />
-              </span>
-              <span className="brand__text">
-                <span className="brand__name">Future Plan</span>
-                <span className="brand__sub">A psychology career, mapped</span>
-              </span>
-            </a>
-          </div>
+          <button
+            type="button"
+            className="nav-trigger"
+            aria-label="Open contents"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen(true)}
+          >
+            <Menu />
+            <span>Contents</span>
+          </button>
 
-          <div className="site-header__right">
-            <button type="button" className="icon-btn icon-btn--wide" onClick={() => setSearchOpen(true)} aria-label="Search the guide">
+          <a
+            className="brand"
+            href="#start"
+            onClick={(e) => {
+              e.preventDefault();
+              go('start');
+            }}
+          >
+            <span className="brand__mark" aria-hidden="true">
+              <Compass />
+            </span>
+            <span className="brand__text">
+              <span className="brand__name">Future Plan</span>
+              <span className="brand__sub">A psychology career, mapped</span>
+            </span>
+          </a>
+
+          <div className="site-header__actions">
+            <button type="button" className="icon-btn icon-btn--wide header-search" onClick={() => setSearchOpen(true)} aria-label="Search the guide">
               <Search />
               <span className="icon-btn__label">Search</span>
-              <kbd className="kbd">Ctrl K</kbd>
-            </button>
-            <button
-              type="button"
-              className={`icon-btn ${notes ? 'has-dot' : ''}`}
-              onClick={() => setNotesOpen(true)}
-              aria-label="Open your notes"
-              title="Your notes"
-            >
-              <Note />
             </button>
             <button
               type="button"
@@ -207,247 +237,154 @@ export default function App() {
 
       <div className="layout wrap">
         <aside className="sidebar" aria-label="Contents">
-          <div className="profile">
-            <div className="profile__top">
-              <span className="profile__avatar" aria-hidden="true">
-                {PROFILE.age}
-              </span>
-              <div>
-                <p className="profile__name">This plan is for you</p>
-                <p className="profile__meta">
-                  {PROFILE.age} · {PROFILE.place} · {PROFILE.stream}
-                </p>
-              </div>
-            </div>
-            <p className="profile__line">Class of {PROFILE.intake}. Expected above 85%. Psychology is the goal.</p>
+          <div className="sidebar__intro">
+            <p className="sidebar__intro-title">A plan for one person</p>
+            <p className="sidebar__intro-meta">
+              {PROFILE.age} · {PROFILE.place} · {PROFILE.stream} · {PROFILE.intake}
+            </p>
+            <p className="sidebar__intro-note">Checked {PROFILE.checked}. Every number sourced.</p>
           </div>
 
           <div className="sidebar__progress">
-            <ProgressRing value={progress} />
-            <div>
-              <p className="sidebar__progress-title">
-                {done.length} of {SECTIONS.length} read
-              </p>
-              <p className="sidebar__progress-sub">Checked {PROFILE.checked}</p>
+            <div className="sidebar__bar" aria-hidden="true">
+              <span style={{ width: `${progress}%` }} />
             </div>
+            <p>
+              {done.length} of {SECTIONS.length} read
+            </p>
           </div>
 
           <nav className="side-nav" aria-label="Sections">
-            {SECTIONS.map((s) => {
-              const isActive = s.id === active;
-              const isDone = done.includes(s.id);
+            {GROUPS.map((group) => {
+              const items = SECTIONS.filter((s) => s.priority === group.key);
+              if (items.length === 0) return null;
               return (
-                <button
-                  key={s.id}
-                  type="button"
-                  className={`side-nav__item ${isActive ? 'is-active' : ''} ${isDone ? 'is-done' : ''}`}
-                  aria-current={isActive ? 'true' : undefined}
-                  onClick={() => go(s.id)}
-                >
-                  <span className="side-nav__num" aria-hidden="true">
-                    {isDone && !isActive ? <Check /> : s.num}
-                  </span>
-                  <span className="side-nav__label">{s.label}</span>
-                  {pinned.includes(s.id) && <Pin className="side-nav__pin" filled />}
-                </button>
+                <div key={group.key} className="side-group">
+                  <p className="side-group__label">{group.label}</p>
+                  {items.map((s) => {
+                    const isActive = s.id === active;
+                    const isDone = done.includes(s.id);
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        className={`side-nav__item ${isActive ? 'is-active' : ''} ${isDone ? 'is-done' : ''}`}
+                        aria-current={isActive ? 'page' : undefined}
+                        onClick={() => go(s.id)}
+                      >
+                        <span className="side-nav__num" aria-hidden="true">
+                          {isDone && !isActive ? <Check /> : s.num}
+                        </span>
+                        <span className="side-nav__label">{s.label}</span>
+                        <span className="side-nav__time">{s.time}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               );
             })}
           </nav>
 
-          {pinned.length > 0 && (
-            <div className="sidebar__pinned">
-              <p className="sidebar__label">Pinned</p>
-              {SECTIONS.filter((s) => pinned.includes(s.id)).map((s) => (
-                <button key={s.id} type="button" className="sidebar__pin-link" onClick={() => go(s.id)}>
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className="sidebar__foot">
-            <p>Made for one person. Every number traced to an official document.</p>
-            <button type="button" className="link-btn" onClick={() => go('sources')}>
-              See the sources
+          <div className="sidebar__tools">
+            <button type="button" className="sidebar__tool" onClick={() => setSearchOpen(true)}>
+              <Search /> Search
             </button>
+            <button type="button" className="sidebar__tool" onClick={() => setNotesOpen(true)}>
+              <Note /> Notes
+              {notes ? <span className="dot" aria-label="Has notes" /> : null}
+            </button>
+            {installable && (
+              <button type="button" className="sidebar__tool" onClick={startInstall}>
+                <Install /> Install app
+              </button>
+            )}
           </div>
+
+          <button type="button" className="link-btn sidebar__link" onClick={() => go('sources')}>
+            How this was checked
+          </button>
         </aside>
 
         <main id="main" className="main" tabIndex={-1}>
           <div className="main__inner">
-            {active === 'start' ? (
-              <header className="hero">
-                <div className="hero__copy">
-                  <div className="hero__eyebrow">
-                    <Pill tone="accent">Personal guide</Pill>
-                    <span>Delhi · Humanities · {PROFILE.intake} intake</span>
-                  </div>
-                  <h1 className="hero__title">
-                    One student. One clear route from Class 12 to a career in psychology.
-                  </h1>
-                  <p className="hero__lede">
-                    You are 17, in Delhi, studying Humanities, and you want to understand people for a living. This
-                    holds one recommended route, the honest catch on every alternative, and the next three moves.
-                    Checked against official documents in {PROFILE.checked}.
-                  </p>
-                  <div className="hero__actions">
-                    <button type="button" className="btn btn--solid" onClick={readShortAnswer}>
-                      Read the short answer
-                      <ArrowRight />
-                    </button>
-                    <button type="button" className="btn btn--ghost" onClick={() => go('roadmap')}>
-                      See the roadmap
-                    </button>
-                  </div>
-                  <dl className="hero__facts">
-                    <div>
-                      <dt>Degree</dt>
-                      <dd>4 years, honours with research</dd>
-                    </div>
-                    <div>
-                      <dt>Then</dt>
-                      <dd>2-year master’s</dd>
-                    </div>
-                    <div>
-                      <dt>Licence</dt>
-                      <dd>RCI, only for clinical work</dd>
-                    </div>
-                  </dl>
-                </div>
-
-                <div className="hero__route" aria-label="Route at a glance">
-                  <p className="hero__route-label">Your route at a glance</p>
-                  <ol>
-                    <li>
-                      <span className="hero__route-year">2027</span>
-                      <span>CUET and the BA begins</span>
-                    </li>
-                    <li>
-                      <span className="hero__route-year">2031</span>
-                      <span>Master’s begins</span>
-                    </li>
-                    <li>
-                      <span className="hero__route-year">2033</span>
-                      <span>Licence, or a funded PhD</span>
-                    </li>
-                    <li>
-                      <span className="hero__route-year">2036</span>
-                      <span>Practice, research, or a school office</span>
-                    </li>
-                  </ol>
-                  <p className="hero__route-note">Not late. Not early. Just a sequence.</p>
-                </div>
-              </header>
-            ) : null}
-
             {active !== 'start' && (
               <header className="doc-head">
-                <div className="doc-head__top">
-                  <Eyebrow>
-                    Section {current.num} · {current.label}
-                  </Eyebrow>
-                  <div className="doc-head__tools">
-                    <button
-                      type="button"
-                      className={`tool-btn ${pinned.includes(current.id) ? 'is-on' : ''}`}
-                      onClick={() => togglePin(current.id)}
-                      aria-pressed={pinned.includes(current.id)}
-                    >
-                      <Pin filled={pinned.includes(current.id)} />
-                      <span>{pinned.includes(current.id) ? 'Pinned' : 'Pin'}</span>
-                    </button>
-                    <button type="button" className="tool-btn" onClick={() => window.print()}>
-                      <Print />
-                      <span>Print</span>
-                    </button>
-                  </div>
-                </div>
+                <p className="doc-head__meta">
+                  <span>
+                    Section {current.num} of {SECTIONS.length.toString().padStart(2, '0')}
+                  </span>
+                  <span aria-hidden="true">·</span>
+                  <span>{current.time} read</span>
+                  {current.priority === 'later' && <span className="doc-head__tag">Optional</span>}
+                </p>
                 <h1 className="doc-head__title">{current.title}</h1>
                 <p className="doc-head__lede">{current.lede}</p>
+                {current.skipIf && (
+                  <p className="doc-head__skip">
+                    <Info />
+                    <span>{current.skipIf}</span>
+                  </p>
+                )}
               </header>
             )}
 
             <article className="doc-body" id={active === 'start' ? 'short-answer' : undefined}>
-              {active === 'start' && (
-                <div className="doc-tools">
-                  <button
-                    type="button"
-                    className={`tool-btn ${pinned.includes(current.id) ? 'is-on' : ''}`}
-                    onClick={() => togglePin(current.id)}
-                    aria-pressed={pinned.includes(current.id)}
-                  >
-                    <Pin filled={pinned.includes(current.id)} />
-                    <span>{pinned.includes(current.id) ? 'Pinned' : 'Pin'}</span>
-                  </button>
-                  <button type="button" className="tool-btn" onClick={() => window.print()}>
-                    <Print />
-                    <span>Print</span>
-                  </button>
-                </div>
+              {active === 'start' ? (
+                <Start checked={checked} onToggle={toggleChecked} go={go} />
+              ) : (
+                renderer?.()
               )}
-
-              {renderer({ go, checked: done, onToggle: toggleDone })}
             </article>
 
-            <footer className="doc-foot">
-              <div className="doc-foot__status">
-                <button
-                  type="button"
-                  className={`read-toggle ${done.includes(current.id) ? 'is-done' : ''}`}
-                  onClick={() => toggleDone(current.id)}
-                  aria-pressed={done.includes(current.id)}
-                >
-                  <span className="read-toggle__box" aria-hidden="true">
-                    {done.includes(current.id) && <Check />}
-                  </span>
-                  {done.includes(current.id) ? 'Read' : 'Mark as read'}
-                </button>
-                <span className="doc-foot__hint">Saved on this device</span>
-              </div>
-
-              <div className="doc-foot__nav">
-                {prev ? (
-                  <button type="button" className="nav-card nav-card--prev" onClick={() => go(prev.id)}>
-                    <span className="nav-card__dir">
-                      <ArrowLeft /> Previous
-                    </span>
-                    <span className="nav-card__title">{prev.label}</span>
+            <footer className="section-end">
+              {next ? (
+                <>
+                  <p className="section-end__eyebrow">{done.includes(current.id) ? 'Read' : 'Finished this page?'}</p>
+                  <h2 className="section-end__title">Next: {next.label}</h2>
+                  <p className="section-end__text">{nextTime}</p>
+                  <button type="button" className="btn btn--solid btn--wide" onClick={finishAndNext}>
+                    {done.includes(current.id) ? 'Continue' : 'I’m done, continue'}
+                    <ArrowRight />
                   </button>
-                ) : (
-                  <span />
-                )}
-                {next ? (
-                  <button type="button" className="nav-card nav-card--next" onClick={() => go(next.id)}>
-                    <span className="nav-card__dir">
-                      Next <ArrowRight />
-                    </span>
-                    <span className="nav-card__title">{next.label}</span>
+                  <div className="section-end__foot">
+                    {prev ? (
+                      <button type="button" className="link-btn" onClick={() => go(prev.id)}>
+                        <ArrowLeft /> {prev.label}
+                      </button>
+                    ) : (
+                      <span />
+                    )}
+                    <button type="button" className="link-btn" onClick={() => setMenuOpen(true)}>
+                      All sections
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="section-end__eyebrow">The end</p>
+                  <h2 className="section-end__title">That is the whole plan.</h2>
+                  <p className="section-end__text">
+                    Come back to Doubts or Sources whenever you need them. Nothing here expires.
+                  </p>
+                  <button type="button" className="btn btn--solid btn--wide" onClick={finishAndNext}>
+                    Back to the start
+                    <ArrowRight />
                   </button>
-                ) : (
-                  <button type="button" className="nav-card nav-card--next" onClick={() => go('start')}>
-                    <span className="nav-card__dir">
-                      Back to the start <ArrowRight />
-                    </span>
-                    <span className="nav-card__title">The short answer</span>
+                  <button type="button" className="link-btn" onClick={() => setMenuOpen(true)}>
+                    All sections
                   </button>
-                )}
-              </div>
+                </>
+              )}
             </footer>
 
             <footer className="site-foot">
-              <div>
-                <p className="site-foot__brand">Future Plan</p>
-                <p className="site-foot__note">
-                  A personal guide, checked {PROFILE.checked}. Not legal or admissions advice. Confirm anything that
-                  decides money or a year of your life.
-                </p>
-              </div>
+              <p>
+                <strong>Future Plan</strong> · Checked {PROFILE.checked}. A personal guide, not legal or admissions
+                advice.
+              </p>
               <div className="site-foot__actions">
                 <button type="button" className="link-btn" onClick={() => go('sources')}>
                   Sources
-                </button>
-                <button type="button" className="link-btn" onClick={() => window.print()}>
-                  Print this section
                 </button>
                 <button type="button" className="link-btn" onClick={() => scrollToTop()}>
                   Back to top
@@ -463,34 +400,93 @@ export default function App() {
           <div className="drawer drawer--left">
             <div className="drawer__head">
               <div>
-                <p className="drawer__eyebrow">Contents</p>
-                <p className="drawer__title">Nine short sections</p>
+                <p className="drawer__eyebrow">Future Plan</p>
+                <p className="drawer__title">Contents</p>
               </div>
               <button type="button" className="icon-btn" onClick={() => setMenuOpen(false)} aria-label="Close contents" autoFocus>
                 <Close />
               </button>
             </div>
-            <nav className="drawer__nav" aria-label="All sections">
-              {SECTIONS.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  className={`drawer__item ${s.id === active ? 'is-active' : ''}`}
-                  onClick={() => go(s.id)}
-                >
-                  <span className="drawer__num">{done.includes(s.id) ? <Check /> : s.num}</span>
-                  <span className="drawer__item-text">
-                    <span className="drawer__item-label">{s.label}</span>
-                    <span className="drawer__item-title">{s.title}</span>
+
+            <div className="drawer__scroll">
+              {done.length > 0 && (
+                <button type="button" className="pickup" onClick={() => go(nextUp.id)}>
+                  <span className="pickup__label">Pick up where you left off</span>
+                  <span className="pickup__title">{nextUp.label}</span>
+                  <span className="pickup__meta">
+                    {nextUp.num} · {nextUp.time} · {nextUp.gist}
                   </span>
+                  <ArrowRight className="pickup__arrow" />
                 </button>
-              ))}
-            </nav>
-            <div className="drawer__foot">
-              <ProgressRing value={progress} size={44} />
-              <p>
-                {done.length} of {SECTIONS.length} read
-              </p>
+              )}
+
+              <div className="drawer__progress">
+                <div className="drawer__bar" aria-hidden="true">
+                  <span style={{ width: `${progress}%` }} />
+                </div>
+                <p>
+                  {done.length} of {SECTIONS.length} read
+                </p>
+              </div>
+
+              <button type="button" className="drawer__search" onClick={() => {
+                setMenuOpen(false);
+                setSearchOpen(true);
+              }}>
+                <Search />
+                <span>Search the guide</span>
+              </button>
+
+              {GROUPS.map((group) => {
+                const items = SECTIONS.filter((s) => s.priority === group.key);
+                if (items.length === 0) return null;
+                return (
+                  <section key={group.key} className="drawer__group">
+                    <p className="drawer__group-label">{group.label}</p>
+                    {group.note ? <p className="drawer__group-note">{group.note}</p> : null}
+                    {items.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        className={`drawer__item ${s.id === active ? 'is-active' : ''}`}
+                        onClick={() => go(s.id)}
+                      >
+                        <span className="drawer__num" aria-hidden="true">
+                          {done.includes(s.id) ? <Check /> : s.num}
+                        </span>
+                        <span className="drawer__item-text">
+                          <span className="drawer__item-label">{s.label}</span>
+                          <span className="drawer__item-gist">{s.gist}</span>
+                        </span>
+                        <span className="drawer__time">{s.time}</span>
+                      </button>
+                    ))}
+                  </section>
+                );
+              })}
+
+              <div className="drawer__tools">
+                <button type="button" className="drawer__tool" onClick={() => {
+                  setMenuOpen(false);
+                  setNotesOpen(true);
+                }}>
+                  <Note />
+                  <span>Your notes</span>
+                  {notes ? <span className="dot" aria-label="Has notes" /> : null}
+                </button>
+                <button type="button" className="drawer__tool" onClick={toggle}>
+                  {theme === 'dark' ? <Sun /> : <Moon />}
+                  <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+                </button>
+                {installable && (
+                  <button type="button" className="drawer__tool" onClick={startInstall}>
+                    <Install />
+                    <span>Install app</span>
+                  </button>
+                )}
+              </div>
+
+              <p className="drawer__foot">Checked {PROFILE.checked}. Not legal or admissions advice.</p>
             </div>
           </div>
           <button type="button" className="overlay__scrim" aria-label="Close contents" onClick={() => setMenuOpen(false)} />
@@ -498,6 +494,46 @@ export default function App() {
       )}
 
       {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} onPick={go} />}
+
+      {installOpen && (
+        <div className="overlay overlay--center" role="dialog" aria-modal="true" aria-label="Install Future Plan" onKeyDown={trapTab}>
+          <button type="button" className="overlay__scrim overlay__scrim--first" aria-label="Close install help" onClick={() => setInstallOpen(false)} />
+          <div className="install-sheet">
+            <div className="install-sheet__head">
+              <span className="install-sheet__mark" aria-hidden="true">
+                <Install />
+              </span>
+              <button type="button" className="icon-btn" onClick={() => setInstallOpen(false)} aria-label="Close install help" autoFocus>
+                <Close />
+              </button>
+            </div>
+            <p className="install-sheet__eyebrow">Install</p>
+            <h2 className="install-sheet__title">Keep it on your home screen</h2>
+            <p className="install-sheet__text">
+              {ios
+                ? 'On iPhone and iPad, install happens in Safari. Open this page there, then add it to your home screen.'
+                : 'Your browser can keep this guide one tap away, and it will open without the address bar.'}
+            </p>
+            <ol className="install-steps">
+              {(ios
+                ? ['Tap the Share button in Safari.', 'Scroll down and choose Add to Home Screen.', 'Tap Add.']
+                : ['Open your browser menu.', 'Choose Install app or Add to Home Screen.', 'Confirm the install.']
+              ).map((step, i) => (
+                <li key={step} className="install-step">
+                  <span className="install-step__num" aria-hidden="true">
+                    {i + 1}
+                  </span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="install-sheet__note">It opens full screen and works offline after the first visit.</p>
+            <button type="button" className="btn btn--solid btn--wide" onClick={() => setInstallOpen(false)}>
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
 
       {notesOpen && (
         <div className="overlay" role="dialog" aria-modal="true" aria-label="Your notes" onKeyDown={trapTab}>
@@ -544,30 +580,6 @@ export default function App() {
           <button type="button" className="overlay__scrim" aria-label="Close notes" onClick={() => setNotesOpen(false)} />
         </div>
       )}
-
-      <nav className="bottombar" aria-label="Quick navigation">
-        <button type="button" className="bottombar__btn" onClick={() => setMenuOpen(true)} aria-label="Open contents">
-          <Menu />
-          <span>Contents</span>
-        </button>
-        <div className="bottombar__progress">
-          <span>{Math.round(progress)}%</span>
-          <span className="bottombar__track" aria-hidden="true">
-            <span style={{ width: `${progress}%` }} />
-          </span>
-        </div>
-        {next ? (
-          <button type="button" className="bottombar__next" onClick={() => go(next.id)}>
-            Next
-            <ArrowRight />
-          </button>
-        ) : (
-          <button type="button" className="bottombar__next" onClick={() => go('start')}>
-            Start
-            <ArrowRight />
-          </button>
-        )}
-      </nav>
     </div>
   );
 }

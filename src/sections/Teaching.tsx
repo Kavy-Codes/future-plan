@@ -1,6 +1,7 @@
 import { TEACHING_STATES } from '../data/content';
 import { Callout, Eyebrow, Pill } from '../components/ui';
-import { ArrowRight, Check, Info } from '../components/Icons';
+import { TeachingFork } from '../components/Visuals';
+import { Check, Info } from '../components/Icons';
 
 const DIPLOMAS = [
   {
@@ -23,7 +24,7 @@ const DIPLOMAS = [
   },
 ];
 
-export default function Teaching({ go }: { go: (id: string) => void }) {
+export default function Teaching() {
   return (
     <div className="stack-lg">
       <div className="two-col two-col--tight">
@@ -50,6 +51,18 @@ export default function Teaching({ go }: { go: (id: string) => void }) {
           </ul>
         </div>
       </div>
+
+      <section className="block" aria-labelledby="fork-heading">
+        <Eyebrow>The two timelines</Eyebrow>
+        <h3 id="fork-heading" className="h3">
+          Same starting line. Two years apart at the licence.
+        </h3>
+        <p className="body">
+          This is the part the advice usually leaves out. Doing D.El.Ed first is not a shortcut. It moves psychology
+          two years to the right.
+        </p>
+        <TeachingFork />
+      </section>
 
       <section className="block" aria-labelledby="deled-heading">
         <Eyebrow>The diploma</Eyebrow>
@@ -185,13 +198,6 @@ export default function Teaching({ go }: { go: (id: string) => void }) {
         </p>
       </section>
 
-      <div className="next-inline">
-        <p>Whatever you choose, you will want your own money before then. That part is easier than it sounds.</p>
-        <button type="button" className="btn btn--solid" onClick={() => go('money')}>
-          Money while studying
-          <ArrowRight />
-        </button>
-      </div>
     </div>
   );
 }

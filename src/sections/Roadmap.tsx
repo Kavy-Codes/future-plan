@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { TIMELINE } from '../data/content';
 import { Callout, Eyebrow, Pill } from '../components/ui';
-import { ArrowRight, ChevronDown } from '../components/Icons';
+import { ChevronDown } from '../components/Icons';
 
 const MASTERS = [
   {
@@ -27,7 +27,7 @@ const MASTERS = [
   },
 ];
 
-export default function Roadmap({ go }: { go: (id: string) => void }) {
+export default function Roadmap() {
   const [open, setOpen] = useState(TIMELINE[0].age);
 
   return (
@@ -136,13 +136,6 @@ export default function Roadmap({ go }: { go: (id: string) => void }) {
         </div>
       </section>
 
-      <div className="next-inline">
-        <p>The one alternative that needs its own honest page is teaching.</p>
-        <button type="button" className="btn btn--solid" onClick={() => go('teaching')}>
-          The teaching question
-          <ArrowRight />
-        </button>
-      </div>
     </div>
   );
 }

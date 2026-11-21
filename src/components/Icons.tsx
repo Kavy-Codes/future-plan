@@ -89,6 +89,14 @@ export const Alert = ({ className = base }: IconProps) => (
   </svg>
 );
 
+export const Install = ({ className = base }: IconProps) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 3v11" />
+    <path d="M8 10l4 4 4-4" />
+    <path d="M5 16v3a1 1 0 001 1h12a1 1 0 001-1v-3" />
+  </svg>
+);
+
 export const Compass = ({ className = base }: IconProps) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <circle cx="12" cy="12" r="9" />

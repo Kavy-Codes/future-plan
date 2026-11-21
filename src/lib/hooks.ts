@@ -62,6 +62,9 @@ export function useTheme() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', theme === 'dark' ? '#101613' : '#F7F4EE');
   }, [theme]);
 
   const toggle = useCallback(() => {

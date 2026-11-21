@@ -1,4 +1,5 @@
 import { Callout, Eyebrow, Pill } from '../components/ui';
+import { LicenceLadder } from '../components/Visuals';
 import { Check, Info } from '../components/Icons';
 
 const WEEK = [
@@ -92,30 +93,36 @@ export default function Psychology() {
           These titles are not interchangeable. The difference is training, and one legal line: only a medical doctor
           can prescribe psychiatric medicine in India.
         </p>
-        <div className="table-wrap">
-          <table className="table">
-            <caption className="sr-only">Comparison of mental health roles in India</caption>
-            <thead>
-              <tr>
-                <th scope="col">Role</th>
-                <th scope="col">Training</th>
-                <th scope="col">What they can do</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ROLES.map((r) => (
-                <tr key={r.role}>
-                  <th scope="row">
-                    <span className="table__row-title">{r.role}</span>
-                    <span className="table__row-note">{r.note}</span>
-                  </th>
-                  <td>{r.training}</td>
-                  <td>{r.can}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="role-grid">
+          {ROLES.map((r) => (
+            <article key={r.role} className="role-card">
+              <h4 className="role-card__name">{r.role}</h4>
+              <p className="role-card__note">{r.note}</p>
+              <dl className="role-card__facts">
+                <div>
+                  <dt>Training</dt>
+                  <dd>{r.training}</dd>
+                </div>
+                <div>
+                  <dt>Can do</dt>
+                  <dd>{r.can}</dd>
+                </div>
+              </dl>
+            </article>
+          ))}
         </div>
+      </section>
+
+      <section className="block" aria-labelledby="ladder-heading">
+        <Eyebrow>The licence, in four steps</Eyebrow>
+        <h3 id="ladder-heading" className="h3">
+          The only route to clinical practice
+        </h3>
+        <p className="body">
+          Studying psychology does not make you a clinical psychologist. This sequence does. Everything else is a
+          different job, or no licence at all.
+        </p>
+        <LicenceLadder />
       </section>
 
       <section className="block" aria-labelledby="ba-heading">

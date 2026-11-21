@@ -4,8 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#F7F4EE" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#101613" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#F7F4EE" />
     <title>Future Plan · A psychology career, mapped</title>
     <meta
       name="description"
@@ -17,6 +16,14 @@
       content="One recommended route from Class 12 to a career in psychology, with the honest catch on every alternative."
     />
     <meta property="og:type" content="website" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <meta name="application-name" content="Future Plan" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Future Plan" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -33,7 +40,10 @@
             saved = null;
           }
           var system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-          document.documentElement.dataset.theme = saved === 'dark' || saved === 'light' ? saved : system;
+          var theme = saved === 'dark' || saved === 'light' ? saved : system;
+          document.documentElement.dataset.theme = theme;
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute('content', theme === 'dark' ? '#101613' : '#F7F4EE');
         } catch (e) {}
       })();
     </script>
